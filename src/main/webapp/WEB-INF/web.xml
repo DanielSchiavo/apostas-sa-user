@@ -1,0 +1,72 @@
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         version="2.5"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+
+  <display-name>Apostas SA endpoints usuario comum</display-name>
+
+  <servlet>
+    <servlet-name>AutenticarUsuarioServlet</servlet-name>
+    <servlet-class>com.apostassa.infra.usuario.AutenticarUsuarioServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>AutenticarUsuarioServlet</servlet-name>
+    <url-pattern>/usuario/autenticar</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>CadastrarUsuarioServlet</servlet-name>
+    <servlet-class>com.apostassa.infra.usuario.CadastrarUsuarioServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>CadastrarUsuarioServlet</servlet-name>
+    <url-pattern>/usuario/cadastro</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>DadosPessoaisServlet</servlet-name>
+    <servlet-class>com.apostassa.infra.usuario.DadosPessoaisServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>DadosPessoaisServlet</servlet-name>
+    <url-pattern>/usuario/dados-pessoais</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>PaginaInicialServlet</servlet-name>
+    <servlet-class>com.apostassa.infra.usuario.PaginaInicialServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>PaginaInicialServlet</servlet-name>
+    <url-pattern>/usuario/pagina-inicial</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>PerfilJogadorServlet</servlet-name>
+    <servlet-class>com.apostassa.infra.usuario.PerfilJogadorServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>PerfilJogadorServlet</servlet-name>
+    <url-pattern>/usuario/perfil-jogador</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>AlterarSenhaServlet</servlet-name>
+    <servlet-class>com.apostassa.infra.usuario.AlterarSenhaServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>AlterarSenhaServlet</servlet-name>
+    <url-pattern>/usuario/alterar-senha</url-pattern>
+  </servlet-mapping>
+
+
+  <!-- CATEGORIA -->
+  <servlet>
+    <servlet-name>CategoriaUserServlet</servlet-name>
+    <servlet-class>com.apostassa.infra.categoria.CategoriaUserServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>CategoriaUserServlet</servlet-name>
+    <url-pattern>/categoria</url-pattern>
+  </servlet-mapping>
+</web-app>
