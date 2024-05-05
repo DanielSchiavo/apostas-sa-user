@@ -1,6 +1,7 @@
 package com.apostassa.aplicacao.usuario;
 
 import com.apostassa.aplicacao.CriptografiaSenha;
+import com.apostassa.aplicacao.ProvedorConexao;
 import com.apostassa.aplicacao.Token;
 import com.apostassa.aplicacao.usuario.mapper.UsuarioMapper;
 import com.apostassa.dominio.ValidacaoException;
@@ -9,25 +10,33 @@ import com.apostassa.dominio.usuario.Usuario;
 import com.apostassa.dominio.usuario.exceptions.AutenticacaoException;
 import org.mapstruct.factory.Mappers;
 
+import java.util.Map;
+
 
 public class AutenticarUsuario {
 
-	private RepositorioDeUsuarioUser repositorioDeUsuario;
+	private final ProvedorConexao provedorConexao;
+
+	private final RepositorioDeUsuarioUser repositorioDeUsuario;
+
+	private final UsuarioUserPresenter presenter;
 	
-	private CriptografiaSenha criptografiaSenha;
+	private final CriptografiaSenha criptografiaSenha;
 	
-	private Token token;
+	private final Token token;
 	
-	private UsuarioMapper usuarioMapper;
+	private final UsuarioMapper usuarioMapper;
 	
-	public AutenticarUsuario(RepositorioDeUsuarioUser repositorioDeUsuario, CriptografiaSenha criptografiaSenha, Token token) {
-		this.criptografiaSenha = criptografiaSenha;
+	public AutenticarUsuario(ProvedorConexao provedorConexao, RepositorioDeUsuarioUser repositorioDeUsuario, UsuarioUserPresenter presenter, CriptografiaSenha criptografiaSenha, Token token) {
+		this.provedorConexao = provedorConexao;
 		this.repositorioDeUsuario = repositorioDeUsuario;
+		this.presenter = presenter;
+		this.criptografiaSenha = criptografiaSenha;
 		this.token = token;
 		this.usuarioMapper = Mappers.getMapper(UsuarioMapper.class);
 	}
 
-	public String executa(AutenticarUsuarioDTO autenticarUsuarioDTO) throws AutenticacaoException, ValidacaoException {
+	public Map<String, String> executa(AutenticarUsuarioDTO autenticarUsuarioDTO) throws AutenticacaoException, ValidacaoException {
 		Usuario usuario = usuarioMapper.formatarAutenticarUsuarioDTOParaUsuario(autenticarUsuarioDTO);
 		
 		try {
@@ -36,16 +45,19 @@ public class AutenticarUsuario {
 			criptografiaSenha.verificarSenha(usuarioPreAutenticado.getSenha(), autenticarUsuarioDTO.getSenha());
 			
 			String tokenUsuarioAutenticado = token.gerarToken(usuarioPreAutenticado);
-			repositorioDeUsuario.commitarTransacao();
-			return tokenUsuarioAutenticado;
+			provedorConexao.commitarTransacao();
+
+			return presenter.respostaAutenticarUsuario(tokenUsuarioAutenticado);
 		} catch (AutenticacaoException e) {
 			e.printStackTrace();
-			repositorioDeUsuario.rollbackTransacao();
+			provedorConexao.rollbackTransacao();
 			throw new AutenticacaoException(e.getMessage());
 		} catch (ValidacaoException e) {
 			e.printStackTrace();
-			repositorioDeUsuario.rollbackTransacao();
+			provedorConexao.rollbackTransacao();
 			throw new ValidacaoException(e.getMessage());
+		} finally {
+			provedorConexao.fecharConexao();
 		}
 	}
 }

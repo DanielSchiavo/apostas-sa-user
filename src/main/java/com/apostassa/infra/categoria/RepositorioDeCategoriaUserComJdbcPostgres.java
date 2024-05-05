@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@Getter
 public class RepositorioDeCategoriaUserComJdbcPostgres implements RepositorioDeCategoriaUser {
 
     private final Connection connection;
@@ -78,26 +77,6 @@ public class RepositorioDeCategoriaUserComJdbcPostgres implements RepositorioDeC
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public void commitarTransacao() {
-        try {
-            getConnection().commit();
-            getConnection().close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void rollbackTransacao() {
-        try {
-            getConnection().rollback();
-            getConnection().close();
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
 }

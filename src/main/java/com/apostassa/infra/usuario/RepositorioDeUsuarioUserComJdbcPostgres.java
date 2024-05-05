@@ -5,7 +5,7 @@ import com.apostassa.dominio.usuario.*;
 import com.apostassa.dominio.usuario.exceptions.AlterarUsuarioException;
 import com.apostassa.dominio.usuario.exceptions.AutenticacaoException;
 import com.apostassa.dominio.usuario.exceptions.UsuarioNaoEncontradoException;
-import com.apostassa.dominio.usuario.perfiljogador.PerfilJogador;
+import com.apostassa.dominio.usuario.perfilparticipante.PerfilParticipante;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -23,7 +23,7 @@ public class RepositorioDeUsuarioUserComJdbcPostgres implements RepositorioDeUsu
 	public Usuario autenticarUsuario(Usuario autenticarUsuario) throws AutenticacaoException, ValidacaoException {
 		String sql = "SELECT id, email, senha FROM usuarios WHERE email = ?";
 		try (PreparedStatement ps = connection.prepareStatement(sql)) {
-			ps.setString(1, autenticarUsuario.getEmail());
+			ps.setString(1, autenticarUsuario.getEmail().getEndereco());
 			try (ResultSet rs = ps.executeQuery()) {
 				boolean encontrou = rs.next();
 				if (!encontrou) {
@@ -43,7 +43,7 @@ public class RepositorioDeUsuarioUserComJdbcPostgres implements RepositorioDeUsu
 						boolean encontrouRole = rs2.next();
 						if (encontrouRole) {
 							String nomeRole = rs2.getString("role");
-							Role role = new Role();
+							RoleUsuario role = new RoleUsuario();
 							role.setRole(NomeRole.valueOf(nomeRole));
 							
 							usuarioBuilder.adicionarRole(role);
@@ -66,10 +66,10 @@ public class RepositorioDeUsuarioUserComJdbcPostgres implements RepositorioDeUsu
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""";
 		try (PreparedStatement ps = connection.prepareStatement(sql)) {
 			ps.setString(1, cadastrarUsuarioDTO.getId().toString());
-			ps.setString(2, cadastrarUsuarioDTO.getCpf());
+			ps.setString(2, cadastrarUsuarioDTO.getCpf().getNumero());
 			ps.setString(3, cadastrarUsuarioDTO.getNome());
 			ps.setString(4, cadastrarUsuarioDTO.getSobrenome());
-			ps.setString(5, cadastrarUsuarioDTO.getEmail());
+			ps.setString(5, cadastrarUsuarioDTO.getEmail().getEndereco());
 			ps.setString(6, cadastrarUsuarioDTO.getCelular().getDdd());
 			ps.setString(7, cadastrarUsuarioDTO.getCelular().getNumero());
 			ps.setString(8, cadastrarUsuarioDTO.getSenha());
@@ -114,45 +114,11 @@ public class RepositorioDeUsuarioUserComJdbcPostgres implements RepositorioDeUsu
 					
 					Usuario usuario = Usuario.builder()
 											 .nome(nome)
-											 .perfilJogador(PerfilJogador.builder().foto(foto).build())
+											 .perfilJogador(PerfilParticipante.builder().foto(foto).build())
 											 .saldo(saldo)
 											 .build();
 					return usuario;
 				}
-			}
-		} catch (SQLException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@Override
-	public PerfilJogador pegarDadosDoUsuarioPerfilDeJogador(String usuarioId) {
-		try(connection){
-			String sql = "SELECT foto, instagram, facebook, twitter, frase FROM usuarios WHERE id = ?";
-			try(PreparedStatement ps = connection.prepareStatement(sql)) {
-				ps.setString(1, usuarioId);
-				try(ResultSet rs = ps.executeQuery()) {
-					boolean encontrou = rs.next();
-					if (!encontrou) {
-						throw new UsuarioNaoEncontradoException(usuarioId);
-					}
-					
-					String foto = rs.getString("foto");
-					String instagram = rs.getString("instagram");
-					String facebook = rs.getString("facebook");
-					String twitter = rs.getString("twitter");
-					String frase = rs.getString("frase");
-					
-					PerfilJogador perfilJogador = PerfilJogador.builder()
-														    .foto(foto)
-														    .instagram(instagram)
-														    .facebook(facebook)
-														    .twitter(twitter)
-														    .frase(frase).build();
-					
-					return perfilJogador;
-				}
-				
 			}
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
@@ -199,7 +165,12 @@ public class RepositorioDeUsuarioUserComJdbcPostgres implements RepositorioDeUsu
 			throw new RuntimeException(e);
 		}
 	}
-	
+
+	@Override
+	public BigDecimal pegarSaldoPorUsuarioId(String usuarioId) {
+		return null;
+	}
+
 	@Override
 	public void usuarioAlteraSeusDadosPessoais(Usuario usuario) throws AlterarUsuarioException {
 		String sql = gerarSqlUsuarioAlteraSeusDadosPessoais(usuario);
@@ -207,11 +178,11 @@ public class RepositorioDeUsuarioUserComJdbcPostgres implements RepositorioDeUsu
 		try (PreparedStatement ps = connection.prepareStatement(sql)) {
 			int index = 1;
 			if (usuario.getCpf() != null) {
-				ps.setString(index, usuario.getCpf());
+				ps.setString(index, usuario.getCpf().getNumero());
 				index++;
 			}
 			if (usuario.getRg() != null) {
-				ps.setString(index, usuario.getRg());
+				ps.setString(index, usuario.getRg().getNumero());
 				index++;
 			}
 			if (usuario.getNome() != null) {
@@ -223,7 +194,7 @@ public class RepositorioDeUsuarioUserComJdbcPostgres implements RepositorioDeUsu
 				index++;
 			}
 			if (usuario.getEmail() != null) {
-				ps.setString(index, usuario.getEmail());
+				ps.setString(index, usuario.getEmail().getEndereco());
 				index++;
 			}
 			if (usuario.getCelular() != null) {
@@ -247,58 +218,22 @@ public class RepositorioDeUsuarioUserComJdbcPostgres implements RepositorioDeUsu
 				throw new AlterarUsuarioException("Não foi possivel alterar os dados do perfil de jogador");
 			}
 		} catch (SQLException e) {
-		       String mensagem = "Erro ao alterar usuário";
-		       e.printStackTrace();
-		        switch (e.getSQLState()) {
-		            case "23505": // Código de erro para violação de restrição única
-		                if (e.getMessage().contains("usuarios_cpf_key")) {
-		                    mensagem = "CPF já cadastrado";
-		                } else if (e.getMessage().contains("usuarios_email_key")) {
-		                    mensagem = "E-mail já cadastrado";
-		                } else if (e.getMessage().contains("usuarios_numero_celular_key")) {
-		                    mensagem = "Número de celular já cadastrado";
-		                }
-		                break;
-		            default:
-		                break;
-		        }
-		        throw new AlterarUsuarioException(mensagem);
-		}
-	}
-
-	@Override
-	public void usuarioAlteraSeuPerfilDeJogador(Usuario usuario) {
-		String sql = gerarSqlUsuarioAlteraSeuPerfilDeJogador(usuario);
-		try (PreparedStatement ps = connection.prepareStatement(sql)) {
-			int index = 1;
-			if (usuario.getPerfilJogador().getFoto() != null) {
-				ps.setString(index, usuario.getPerfilJogador().getFoto());
-				index++;
+			String mensagem = "Erro ao alterar usuário";
+			e.printStackTrace();
+			switch (e.getSQLState()) {
+				case "23505": // Código de erro para violação de restrição única
+					if (e.getMessage().contains("usuarios_cpf_key")) {
+						mensagem = "CPF já cadastrado";
+					} else if (e.getMessage().contains("usuarios_email_key")) {
+						mensagem = "E-mail já cadastrado";
+					} else if (e.getMessage().contains("usuarios_numero_celular_key")) {
+						mensagem = "Número de celular já cadastrado";
+					}
+					break;
+				default:
+					break;
 			}
-			if (usuario.getPerfilJogador().getInstagram() != null) {
-				ps.setString(index, usuario.getPerfilJogador().getInstagram());
-				index++;
-			}
-			if (usuario.getPerfilJogador().getFacebook() != null) {
-				ps.setString(index, usuario.getPerfilJogador().getFacebook());
-				index++;
-			}
-			if (usuario.getPerfilJogador().getTwitter() != null) {
-				ps.setString(index, usuario.getPerfilJogador().getTwitter());
-				index++;
-			}
-			if (usuario.getPerfilJogador().getFrase() != null) {
-				ps.setString(index, usuario.getPerfilJogador().getFrase());
-				index++;
-			}
-			ps.setString(index, usuario.getId().toString());
-			int executeUpdate = ps.executeUpdate();
-
-			if (executeUpdate == 0) {
-				throw new RuntimeException("Não foi possivel alterar os dados do perfil de jogador");
-			}
-		} catch (SQLException e) {
-			throw new RuntimeException(e);
+			throw new AlterarUsuarioException(mensagem);
 		}
 	}
 
@@ -307,7 +242,7 @@ public class RepositorioDeUsuarioUserComJdbcPostgres implements RepositorioDeUsu
 		String sql = "UPDATE usuarios SET senha = ? WHERE email = ?";
 		try (PreparedStatement updatePs = connection.prepareStatement(sql)) {
 			updatePs.setString(1, usuario.getSenha());
-			updatePs.setString(2, usuario.getEmail());
+			updatePs.setString(2, usuario.getEmail().getEndereco());
 			int executeUpdate = updatePs.executeUpdate();
 
 			if (executeUpdate == 0) {
@@ -335,8 +270,13 @@ public class RepositorioDeUsuarioUserComJdbcPostgres implements RepositorioDeUsu
 			throw new RuntimeException(e);
 		}
 	}
-	
-    private String gerarSqlUsuarioAlteraSeusDadosPessoais(Usuario usuario) {
+
+	@Override
+	public void novoSaldo(BigDecimal novoSaldo) {
+
+	}
+
+	private String gerarSqlUsuarioAlteraSeusDadosPessoais(Usuario usuario) {
         StringBuilder sql = new StringBuilder("UPDATE usuarios SET ");
         boolean first = true;
 		if (usuario.getCpf() != null) {
@@ -399,68 +339,5 @@ public class RepositorioDeUsuarioUserComJdbcPostgres implements RepositorioDeUsu
         return sql.toString();
     }
 	
-    private String gerarSqlUsuarioAlteraSeuPerfilDeJogador(Usuario usuario) {
-        StringBuilder sql = new StringBuilder("UPDATE usuarios SET ");
-        boolean first = true;
-        if (usuario.getPerfilJogador().getFoto() != null) {
-            sql.append("foto = ?");
-            first = false;
-        }
-        if (usuario.getPerfilJogador().getInstagram() != null) {
-            if (!first) {
-                sql.append(", ");
-            }
-            sql.append("instagram = ?");
-            first = false;
-        }
-        if (usuario.getPerfilJogador().getFacebook() != null) {
-            if (!first) {
-                sql.append(", ");
-            }
-            sql.append("facebook = ?");
-            first = false;
-        }
-        if (usuario.getPerfilJogador().getTwitter() != null) {
-            if (!first) {
-                sql.append(", ");
-            }
-            sql.append("twitter = ?");
-            first = false;
-        }
-        if (usuario.getPerfilJogador().getFrase() != null) {
-            if (!first) {
-                sql.append(", ");
-            }
-            sql.append("frase = ?");
-            first = false;
-        }
-        
-        sql.append(" WHERE id = ?");
-        return sql.toString();
-    }
-    
-    public Connection getConnection() {
-    	return this.connection;
-    }
 
-    
-	@Override
-	public void commitarTransacao() {
-		try {
-			getConnection().commit();
-			getConnection().close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-	}
-
-	@Override
-	public void rollbackTransacao() {
-		try {
-			getConnection().rollback();
-			getConnection().close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-	}
 }

@@ -1,5 +1,6 @@
 package com.apostassa.aplicacao.usuario;
 
+import com.apostassa.aplicacao.ProvedorConexao;
 import com.apostassa.aplicacao.usuario.mapper.UsuarioMapper;
 import com.apostassa.dominio.usuario.RepositorioDeUsuarioUser;
 import com.apostassa.dominio.usuario.Usuario;
@@ -11,16 +12,22 @@ import java.util.UUID;
 
 public class UsuarioAlteraSeusDadosPessoais {
 
-	private RepositorioDeUsuarioUser repositorioDeUsuario;
+	private final ProvedorConexao provedorConexao;
+
+	private final RepositorioDeUsuarioUser repositorioDeUsuario;
+
+	private final UsuarioUserPresenter presenter;
+
+	private final UsuarioMapper usuarioMapper;
 	
-	private UsuarioMapper usuarioMapper;
-	
-	public UsuarioAlteraSeusDadosPessoais(RepositorioDeUsuarioUser repositorioDeUsuario) {
+	public UsuarioAlteraSeusDadosPessoais(ProvedorConexao provedorConexao, RepositorioDeUsuarioUser repositorioDeUsuario, UsuarioUserPresenter presenter) {
+		this.provedorConexao = provedorConexao;
 		this.repositorioDeUsuario = repositorioDeUsuario;
+		this.presenter = presenter;
 		this.usuarioMapper = Mappers.getMapper(UsuarioMapper.class);
 	}
 
-	public void executa(UsuarioAlteraSeusDadosPessoaisDTO dadosQueSeraoAlterados, String usuarioId) throws AutenticacaoException, AlterarUsuarioException {
+	public String executa(UsuarioAlteraSeusDadosPessoaisDTO dadosQueSeraoAlterados, String usuarioId) throws AutenticacaoException, AlterarUsuarioException {
 		boolean jaVerificou = repositorioDeUsuario.verificarSeUsuarioJaConfirmouIdentidade(usuarioId);
 		if (jaVerificou && (dadosQueSeraoAlterados.getCpf() != null || dadosQueSeraoAlterados.getRg() != null || 
 							dadosQueSeraoAlterados.getNome() != null || dadosQueSeraoAlterados.getSobrenome() != null || 
@@ -33,12 +40,14 @@ public class UsuarioAlteraSeusDadosPessoais {
 		
 		try {
 			repositorioDeUsuario.usuarioAlteraSeusDadosPessoais(usuario);
-			repositorioDeUsuario.commitarTransacao();
+			provedorConexao.commitarTransacao();
+			return presenter.respostaUsuarioAlteraSeusDadosPessoais(usuario);
 		} catch (AlterarUsuarioException e) {
 			e.printStackTrace();
-			repositorioDeUsuario.rollbackTransacao();
+			provedorConexao.rollbackTransacao();
 			throw new AlterarUsuarioException(e.getMessage());
+		} finally {
+			provedorConexao.fecharConexao();
 		}
 	}
-	
 }

@@ -2,37 +2,17 @@ package com.apostassa.aplicacao.usuario.mapper;
 
 import com.apostassa.aplicacao.usuario.AutenticarUsuarioDTO;
 import com.apostassa.aplicacao.usuario.CadastrarUsuarioDTO;
-import com.apostassa.aplicacao.usuario.UsuarioAlteraSeuPerfilDeJogadorDTO;
 import com.apostassa.aplicacao.usuario.UsuarioAlteraSeusDadosPessoaisDTO;
 import com.apostassa.aplicacao.usuario.UsuarioAlteraSuaSenhaDTO;
-import com.apostassa.aplicacao.usuario.UsuarioPaginaInicialDTO;
 import com.apostassa.dominio.usuario.Usuario;
-import com.apostassa.dominio.usuario.perfiljogador.PerfilJogador;
 import javax.annotation.processing.Generated;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2024-04-27T21:14:15-0300",
+    date = "2024-05-01T21:59:34-0300",
     comments = "version: 1.4.2.Final, compiler: javac, environment: Java 21.0.2 (Oracle Corporation)"
 )
 public class UsuarioMapperImpl implements UsuarioMapper {
-
-    @Override
-    public UsuarioPaginaInicialDTO formatarUsuarioParaUsuarioPaginaInicialDTO(Usuario usuario) {
-        if ( usuario == null ) {
-            return null;
-        }
-
-        UsuarioPaginaInicialDTO usuarioPaginaInicialDTO = new UsuarioPaginaInicialDTO();
-
-        usuarioPaginaInicialDTO.setFoto( usuarioPerfilJogadorFoto( usuario ) );
-        usuarioPaginaInicialDTO.setNome( usuario.getNome() );
-        if ( usuario.getSaldo() != null ) {
-            usuarioPaginaInicialDTO.setSaldo( usuario.getSaldo().toString() );
-        }
-
-        return usuarioPaginaInicialDTO;
-    }
 
     @Override
     public Usuario formatarAutenticarUsuarioDTOParaUsuario(AutenticarUsuarioDTO autenticarUsuarioDTO) {
@@ -71,23 +51,6 @@ public class UsuarioMapperImpl implements UsuarioMapper {
     }
 
     @Override
-    public PerfilJogador formatarUsuarioAlteraSeuPerfilDeJogadorDTOParaUsuario(UsuarioAlteraSeuPerfilDeJogadorDTO usuarioAlteraSeuPerfilDeJogadorDTO) {
-        if ( usuarioAlteraSeuPerfilDeJogadorDTO == null ) {
-            return null;
-        }
-
-        PerfilJogador perfilJogador = new PerfilJogador();
-
-        perfilJogador.setFoto( usuarioAlteraSeuPerfilDeJogadorDTO.getFoto() );
-        perfilJogador.setInstagram( usuarioAlteraSeuPerfilDeJogadorDTO.getInstagram() );
-        perfilJogador.setFacebook( usuarioAlteraSeuPerfilDeJogadorDTO.getFacebook() );
-        perfilJogador.setTwitter( usuarioAlteraSeuPerfilDeJogadorDTO.getTwitter() );
-        perfilJogador.setFrase( usuarioAlteraSeuPerfilDeJogadorDTO.getFrase() );
-
-        return perfilJogador;
-    }
-
-    @Override
     public Usuario formatarUsuarioAlteraSeusDadosPessoaisDTOParaUsuario(UsuarioAlteraSeusDadosPessoaisDTO usuarioAlteraSeusDadosPessoaisDTO) {
         if ( usuarioAlteraSeusDadosPessoaisDTO == null ) {
             return null;
@@ -117,20 +80,5 @@ public class UsuarioMapperImpl implements UsuarioMapper {
         usuario.setSenha( usuarioAlteraSuaSenhaDTO.getSenhaAtual() );
 
         return usuario;
-    }
-
-    private String usuarioPerfilJogadorFoto(Usuario usuario) {
-        if ( usuario == null ) {
-            return null;
-        }
-        PerfilJogador perfilJogador = usuario.getPerfilJogador();
-        if ( perfilJogador == null ) {
-            return null;
-        }
-        String foto = perfilJogador.getFoto();
-        if ( foto == null ) {
-            return null;
-        }
-        return foto;
     }
 }

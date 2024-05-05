@@ -1,6 +1,7 @@
 package com.apostassa.aplicacao.usuario;
 
 import com.apostassa.aplicacao.CriptografiaSenha;
+import com.apostassa.aplicacao.ProvedorConexao;
 import com.apostassa.aplicacao.usuario.mapper.UsuarioMapper;
 import com.apostassa.dominio.ValidacaoException;
 import com.apostassa.dominio.usuario.Email;
@@ -16,19 +17,25 @@ import java.util.Set;
 
 public class UsuarioAlteraSuaSenha {
 
-	private RepositorioDeUsuarioUser repositorioDeUsuario;
+	private final ProvedorConexao provedorConexao;
+
+	private final RepositorioDeUsuarioUser repositorioDeUsuario;
+
+	private final UsuarioUserPresenter presenter;
 	
-	private CriptografiaSenha criptografiaSenha;
+	private final CriptografiaSenha criptografiaSenha;
 	
-	private UsuarioMapper usuarioMapper;
+	private final UsuarioMapper usuarioMapper;
 	
-	public UsuarioAlteraSuaSenha(RepositorioDeUsuarioUser repositorioDeUsuario, CriptografiaSenha criptografiaSenha) {
+	public UsuarioAlteraSuaSenha(ProvedorConexao provedorConexao, RepositorioDeUsuarioUser repositorioDeUsuario, UsuarioUserPresenter presenter, CriptografiaSenha criptografiaSenha) {
+		this.provedorConexao = provedorConexao;
 		this.repositorioDeUsuario = repositorioDeUsuario;
+		this.presenter = presenter;
 		this.criptografiaSenha = criptografiaSenha;
 		this.usuarioMapper = Mappers.getMapper(UsuarioMapper.class);
 	}
 
-	public void executa(UsuarioAlteraSuaSenhaDTO usuarioAlteraSuaSenhaDTO, String email) throws AutenticacaoException, AlterarUsuarioException, ValidacaoException {
+	public String executa(UsuarioAlteraSuaSenhaDTO usuarioAlteraSuaSenhaDTO, String email) throws AutenticacaoException, AlterarUsuarioException, ValidacaoException {
 		Set<ConstraintViolation<UsuarioAlteraSuaSenhaDTO>> violations = Validation.buildDefaultValidatorFactory().getValidator().validate(usuarioAlteraSuaSenhaDTO);
         for (ConstraintViolation<UsuarioAlteraSuaSenhaDTO> violation : violations) {
         	throw new ValidacaoException(violation.getMessage());
@@ -43,19 +50,23 @@ public class UsuarioAlteraSuaSenha {
 			String senhaNovaCriptografada = criptografiaSenha.criptografarSenha(usuarioAlteraSuaSenhaDTO.getSenhaNova());
 			usuario.setSenha(senhaNovaCriptografada);
 			repositorioDeUsuario.usuarioAlteraSuaSenha(usuario);
-			repositorioDeUsuario.commitarTransacao();
+			provedorConexao.commitarTransacao();
+
+			return presenter.respostaUsuarioAlteraSuaSenha();
 		} catch (AlterarUsuarioException e) {
-			repositorioDeUsuario.rollbackTransacao();
+			provedorConexao.rollbackTransacao();
 			e.printStackTrace();
 			throw new AlterarUsuarioException(e.getMessage());
 		} catch (AutenticacaoException e) {
 			e.printStackTrace();
-			repositorioDeUsuario.rollbackTransacao();
+			provedorConexao.rollbackTransacao();
 			throw new AutenticacaoException(e.getMessage());
 		} catch (ValidacaoException e) {
 			e.printStackTrace();
-			repositorioDeUsuario.rollbackTransacao();
+			provedorConexao.rollbackTransacao();
 			throw new ValidacaoException(e.getMessage());
+		} finally {
+			provedorConexao.fecharConexao();
 		}
 	}
 	

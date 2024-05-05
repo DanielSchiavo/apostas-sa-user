@@ -1,6 +1,7 @@
 package com.apostassa.aplicacao.usuario;
 
 import com.apostassa.aplicacao.CriptografiaSenha;
+import com.apostassa.aplicacao.ProvedorConexao;
 import com.apostassa.aplicacao.usuario.mapper.UsuarioMapper;
 import com.apostassa.dominio.GeradorUUID;
 import com.apostassa.dominio.ValidacaoException;
@@ -12,27 +13,34 @@ import org.mapstruct.factory.Mappers;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 public class CadastrarUsuario {
+
+	private final ProvedorConexao provedorConexao;
+
+	private final RepositorioDeUsuarioUser repositorioDeUsuario;
+
+	private final UsuarioUserPresenter presenter;
 	
-	private RepositorioDeUsuarioUser repositorioDeUsuario;
+	private final CriptografiaSenha criptografiaSenha;
 	
-	private CriptografiaSenha criptografiaSenha;
+	private final GeradorUUID geradorUuid;
 	
-	private GeradorUUID geradorUuid;
+	private final UsuarioMapper usuarioMapper;
 	
-	private UsuarioMapper usuarioMapper;
-	
-	public CadastrarUsuario(RepositorioDeUsuarioUser repositorioDeUsuario, CriptografiaSenha criptografiaSenha, GeradorUUID geradorUuid) {
+	public CadastrarUsuario(ProvedorConexao provedorConexao, RepositorioDeUsuarioUser repositorioDeUsuario, UsuarioUserPresenter presenter, CriptografiaSenha criptografiaSenha, GeradorUUID geradorUuid) {
+		this.provedorConexao = provedorConexao;
 		this.repositorioDeUsuario = repositorioDeUsuario;
+		this.presenter = presenter;
 		this.criptografiaSenha = criptografiaSenha;
 		this.geradorUuid = geradorUuid;
 		this.usuarioMapper = Mappers.getMapper(UsuarioMapper.class);
 	}
 
-	public String executa(CadastrarUsuarioDTO cadastrarUsuarioDTO) throws ValidacaoException {
+	public Map<String, String> executa(CadastrarUsuarioDTO cadastrarUsuarioDTO) throws ValidacaoException {
 		Set<ConstraintViolation<CadastrarUsuarioDTO>> violations = Validation.buildDefaultValidatorFactory().getValidator().validate(cadastrarUsuarioDTO);
         for (ConstraintViolation<CadastrarUsuarioDTO> violation : violations) {
         	throw new ValidacaoException(violation.getMessage());
@@ -51,14 +59,15 @@ public class CadastrarUsuario {
 		
 		try {
 			repositorioDeUsuario.cadastrarUsuario(usuario);
-			repositorioDeUsuario.commitarTransacao();
+			provedorConexao.commitarTransacao();
+			return presenter.respostaCadastrarUsuario(usuario);
 		} catch (ValidacaoException e) {
 			e.printStackTrace();
-			repositorioDeUsuario.rollbackTransacao();
+			provedorConexao.rollbackTransacao();
 			throw new ValidacaoException(e.getMessage());
+		} finally {
+			provedorConexao.fecharConexao();
 		}
-		
-		return "Cadastrado com sucesso!";
 	}
 	
 }
